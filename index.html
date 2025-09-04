@@ -733,10 +733,9 @@
                 
                 for (let i = 0; i < entriesForPdf.length; i++) {
                     const { ticket, number } = entriesForPdf[i];
-                    // Number + photo left, details right
+                    // Photo left, details (with number) right
                     const leftX = 10;
                     const numberY = y;
-                    pdf.text(String(number), leftX, numberY);
                     const imgX = leftX;
                     const imgWidth = 60;
                     let imgHeight = 0;
@@ -745,11 +744,11 @@
                         const imgProps = pdf.getImageProperties(imgData);
                         imgHeight = (imgProps.height * imgWidth) / imgProps.width;
                     }
-                    let blockTop = numberY + 8;
+                    let blockTop = numberY;
                     if (blockTop + Math.max(imgHeight, 10) > 270) {
                         pdf.addPage();
                         y = 10;
-                        blockTop = y + 8;
+                        blockTop = y;
                     }
                     if (ticket.photo) {
                         const imgData2 = await downscaleImage(ticket.photo, 1200, 0.6);
@@ -758,9 +757,9 @@
                     const detailsX = imgX + imgWidth + 10;
                     let detailsY = blockTop + 5;
                     const details = [
+                        `${number} - Description: ${ticket.desc || "-"}`,
                         `Date: ${ticket.date || "-"}`,
                         `Type: ${ticket.type || "-"}`,
-                        `Description: ${ticket.desc || "-"}`,
                         `Guests: ${ticket.guests || "-"}`,
                         `Kilometers: ${ticket.km || "-"}`,
                         `Amount: ${ticket.amount || "-"}`
