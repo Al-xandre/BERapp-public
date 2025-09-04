@@ -489,6 +489,11 @@
             e.preventDefault();
             const form = e.target;
             const formData = new FormData(form);
+            // Limit total entries to 90
+            if (tickets.length >= 90) {
+                alert('The original BER file cannot exceed 90 entries. Please save your BER in Excel and PDF format and continue with a new BER file.');
+                return;
+            }
             
             // Récupération de la photo
             let photoData = null;
@@ -538,14 +543,13 @@
         function renderTickets() {
             const list = document.getElementById('ticketList');
             const sortedTickets = sortTicketsByDate(tickets);
-            const eligibleForPdf = sortedTickets.filter(t => t.photo && t.type !== "Indemnity KMs");
             
             list.innerHTML = sortedTickets.map((ticket, index) => `
                 <li class="ticket-item">
                     <input type="checkbox" 
                            ${selectedTickets.includes(ticket.id) ? 'checked' : ''} 
                            onchange="handleSelect(${ticket.id}, this.checked)">
-                    <div class="ticket-number">${(() => { const n = eligibleForPdf.indexOf(ticket); return n === -1 ? '-' : (n + 1); })()}</div>
+                    <div class="ticket-number">${index + 1}</div>
                     <div class="ticket-content">
                         <div><strong>Date:</strong> ${ticket.date || "-"}</div>
                         <div><strong>Type:</strong> ${ticket.type || "-"}</div>
@@ -679,7 +683,8 @@
         // Export PDF
         async function exportPDF() {
             // Exclude Indemnity KMs from PDF, but keep them elsewhere
-            const eligible = tickets.filter(t => t.photo && t.type !== "Indemnity KMs");
+            // Keep original order and numbering 1..N; skip only rendering of Indemnity KMs
+            const eligible = tickets.filter(t => t.photo);
             if (eligible.length === 0) {
                 showStatus('No receipt with photo to export', 'error');
                 return;
@@ -698,6 +703,14 @@
                 
                 for (let i = 0; i < sortedTickets.length; i++) {
                     const ticket = sortedTickets[i];
+                    // Skip rendering in PDF if Indemnity KMs, but keep numbering gap
+                    if (ticket.type === "Indemnity KMs") {
+                        // Reserve space only for the number line to preserve numbering gaps
+                        pdf.text(String(i + 1), 10, y);
+                        y += 8;
+                        if (y > 270) { pdf.addPage(); y = 10; }
+                        continue;
+                    }
                     // Number + photo left, details right
                     const leftX = 10;
                     const numberY = y;
@@ -775,4 +788,4 @@
         }
     </script>
 </body>
-</html> 
+</html>
