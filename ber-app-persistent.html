@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#007bff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="BER App">
+    <title>Business Expense Report - Persistent</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 1rem;
+            min-height: 100vh;
+        }
+        
+        h2 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            color: #333;
+        }
+        
+        .section {
+            border: 1px solid #ccc;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            background: white;
+        }
+        
+        .section h3 {
+            margin-bottom: 1rem;
+            color: #007bff;
+        }
+        
+        .form-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .form-group {
+            flex: 1 1 140px;
+        }
+        
+        .form-group.full {
+            flex: 1 1 100%;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            margin-top: 12px;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .ticket-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .ticket-item {
+            border-bottom: 1px solid #eee;
+            padding: 12px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            flex-wrap: wrap;
+            background: white;
+            margin-bottom: 8px;
+            border-radius: 4px;
+        }
+        
+        .ticket-number {
+            min-width: 40px;
+            font-weight: 600;
+            color: #007bff;
+        }
+        
+        .ticket-content {
+            flex: 1;
+        }
+        
+        .ticket-photo {
+            width: 48px;
+            height: 48px;
+            object-fit: cover;
+            border-radius: 3px;
+            border: 1px solid #ccc;
+        }
+        
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .delete-btn:hover {
+            background: #c82333;
+        }
+        
+        .photo-preview {
+            max-width: 120px;
+            max-height: 120px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+        }
+        
+        .checkbox-group label {
+            margin-bottom: 0;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .bulk-delete {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 12px;
+            cursor: pointer;
+            margin-left: 12px;
+        }
+        
+        .bulk-delete:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .export-buttons button {
+            flex: 1;
+            min-width: 120px;
+        }
+        
+        .status {
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 0.5rem;
+            }
+            
+            .form-group {
+                flex: 1 1 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Business Expense Report</h2>
+
+        <!-- Section Storage Persistence -->
+        <div class="section">
+            <h3>0. Storage persistence</h3>
+            <div id="persistStatus" class="status" style="display: none;"></div>
+            <button id="persistBtn">Enable Persistent Storage</button>
+            <div style="margin-top:8px; font-size: 14px; color:#555;">
+                Tip: Installing the app (Add to Home Screen) can improve persistence.
+            </div>
+        </div>
+        
+        <!-- Section Import Excel -->
+        <div class="section">
+            <h3>1. Load HR workbook</h3>
+            <input type="file" id="excelFile" accept=".xlsx" style="width: 100%">
+            <div id="excelStatus" class="status" style="display: none;"></div>
+        </div>
+        
+        <!-- Section Add Receipt -->
+        <div class="section">
+            <h3>2. Add receipt</h3>
+            <form id="ticketForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input name="date" type="date">
+                    </div>
+                    <div class="form-group">
+                        <label>Expense type</label>
+                        <select name="type">
+                            <option value="">--</option>
+                            <option value="Airfaire Within Switzerland">Airfaire Within Switzerland</option>
+                            <option value="Airfare">Airfare</option>
+                            <option value="Breakfast">Breakfast</option>
+                            <option value="Breakfast / Switzerland">Breakfast / Switzerland</option>
+                            <option value="Breakfast Guests / external">Breakfast Guests / external</option>
+                            <option value="Breakfast Guests / external / Switzerland">Breakfast Guests / external / Switzerland</option>
+                            <option value="Breakfast with employee Spectrum">Breakfast with employee Spectrum</option>
+                            <option value="Breakfast with employee Spectrum / Switzerland">Breakfast with employee Spectrum / Switzerland</option>
+                            <option value="Car Gaz">Car Gaz</option>
+                            <option value="Car gaz within Switzerland">Car gaz within Switzerland</option>
+                            <option value="Car other">Car other</option>
+                            <option value="Car other in Switzerland">Car other in Switzerland</option>
+                            <option value="Car Rental">Car Rental</option>
+                            <option value="Car Rental within Switzerland">Car Rental within Switzerland</option>
+                            <option value="Diner">Diner</option>
+                            <option value="Diner / Switzerland">Diner / Switzerland</option>
+                            <option value="Diner with employee Spectrum">Diner with employee Spectrum</option>
+                            <option value="Diner with employee Spectrum/ Switzerland">Diner with employee Spectrum/ Switzerland</option>
+                            <option value="Fixed phone / Home fixed Internet">Fixed phone / Home fixed Internet</option>
+                            <option value="Fixed phone / Home fixed Internet / Switzerland">Fixed phone / Home fixed Internet / Switzerland</option>
+                            <option value="Hotel including breakfast / Switzerland">Hotel including breakfast / Switzerland</option>
+                            <option value="Hotel Room International inlc Taxes">Hotel Room International inlc Taxes</option>
+                            <option value="Hotel Taxes and fees / Switzerland">Hotel Taxes and fees / Switzerland</option>
+                            <option value="Indemnity KMs">Indemnity KMs</option>
+                            <option value="Lunch">Lunch</option>
+                            <option value="Lunch / Switzerland">Lunch / Switzerland</option>
+                            <option value="Lunch with employee Spectrum">Lunch with employee Spectrum</option>
+                            <option value="Lunch with employee Spectrum/ Switzerland">Lunch with employee Spectrum/ Switzerland</option>
+                            <option value="Lunch-Diner Guests / external">Lunch-Diner Guests / external</option>
+                            <option value="Lunch-Diner Guests / external / Switzerland">Lunch-Diner Guests / external / Switzerland</option>
+                            <option value="Meeting room rental">Meeting room rental</option>
+                            <option value="Meeting room rental in Switzerland">Meeting room rental in Switzerland</option>
+                            <option value="mobile phone / 3G Card">mobile phone / 3G Card</option>
+                            <option value="mobile phone / 3G Card / Switzerland">mobile phone / 3G Card / Switzerland</option>
+                            <option value="Office supplies (paper, ink for printer)">Office supplies (paper, ink for printer)</option>
+                            <option value="Office supplies (paper, ink for printer) / Switzerland">Office supplies (paper, ink for printer) / Switzerland</option>
+                            <option value="Other (to be specified)">Other (to be specified)</option>
+                            <option value="Other (to be specified) / Switzerland">Other (to be specified) / Switzerland</option>
+                            <option value="Post / Courier / Freight">Post / Courier / Freight</option>
+                            <option value="Post / Courier / Freight /Switzerland">Post / Courier / Freight /Switzerland</option>
+                            <option value="Small technical material">Small technical material</option>
+                            <option value="Small technical material / Switzerland">Small technical material / Switzerland</option>
+                            <option value="Snack">Snack</option>
+                            <option value="Taxi">Taxi</option>
+                            <option value="Train / Parking / Highway">Train / Parking / Highway</option>
+                            <option value="Train / Parking / Switzerland">Train / Parking / Switzerland</option>
+                        </select>
+                    </div>
+                    <div class="form-group full">
+                        <label>Description</label>
+                        <input name="desc" type="text">
+                    </div>
+                    <div class="form-group full">
+                        <label>Guests</label>
+                        <input name="guests" type="text">
+                    </div>
+                    <div class="form-group">
+                        <label>Kilometers</label>
+                        <input name="km" type="number">
+                    </div>
+                    <div class="form-group">
+                        <label>Amount</label>
+                        <input name="amount" type="number" step="0.01">
+                    </div>
+                    <div class="form-group full">
+                        <label>Receipt photo</label>
+                        <input name="photo" type="file" accept="image/*" capture="environment">
+                        <img id="photoPreview" class="photo-preview" style="display: none;">
+                    </div>
+                </div>
+                <button type="submit">Add receipt</button>
+            </form>
+        </div>
+        
+        <!-- Section Receipts List -->
+        <div class="section">
+            <h3>Receipts (<span id="ticketCount">0</span>)</h3>
+            <div class="controls">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="selectAll">
+                    <label for="selectAll">Select all</label>
+                </div>
+                <button id="deleteSelected" class="bulk-delete" disabled>Delete selected</button>
+            </div>
+            <ul id="ticketList" class="ticket-list"></ul>
+        </div>
+        
+        <!-- Section Export -->
+        <div class="section">
+            <div class="export-buttons">
+                <button id="exportExcel" disabled>Export Excel</button>
+                <button id="exportPDF" disabled>Export PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts externes via CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dexie/4.0.11/dexie.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/3.0.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script>
+        // Application configuration
+        const EXPENSE_TYPES = [
+            "Airfaire Within Switzerland",
+            "Airfare",
+            "Breakfast",
+            "Breakfast / Switzerland",
+            "Breakfast Guests / external",
+            "Breakfast Guests / external / Switzerland",
+            "Breakfast with employee Spectrum",
+            "Breakfast with employee Spectrum / Switzerland",
+            "Car Gaz",
+            "Car gaz within Switzerland",
+            "Car other",
+            "Car other in Switzerland",
+            "Car Rental",
+            "Car Rental within Switzerland",
+            "Diner",
+            "Diner / Switzerland",
+            "Diner with employee Spectrum",
+            "Diner with employee Spectrum/ Switzerland",
+            "Fixed phone / Home fixed Internet",
+            "Fixed phone / Home fixed Internet / Switzerland",
+            "Hotel including breakfast / Switzerland",
+            "Hotel Room International inlc Taxes",
+            "Hotel Taxes and fees / Switzerland",
+            "Indemnity KMs",
+            "Lunch",
+            "Lunch / Switzerland",
+            "Lunch with employee Spectrum",
+            "Lunch with employee Spectrum/ Switzerland",
+            "Lunch-Diner Guests / external",
+            "Lunch-Diner Guests / external / Switzerland",
+            "Meeting room rental",
+            "Meeting room rental in Switzerland",
+            "mobile phone / 3G Card",
+            "mobile phone / 3G Card / Switzerland",
+            "Office supplies (paper, ink for printer)",
+            "Office supplies (paper, ink for printer) / Switzerland",
+            "Other (to be specified)",
+            "Other (to be specified) / Switzerland",
+            "Post / Courier / Freight",
+            "Post / Courier / Freight /Switzerland",
+            "Small technical material",
+            "Small technical material / Switzerland",
+            "Snack",
+            "Taxi",
+            "Train / Parking / Highway",
+            "Train / Parking / Switzerland"
+        ];
+        let workbook = null;
+        let sheetName = "";
+        let tickets = [];
+        let selectedTickets = [];
+        let selectAll = false;
+
+        // IndexedDB with Dexie
+        const db = new Dexie("expenses");
+        db.version(1).stores({ tickets: "++id,date,type,desc,guests,km,amount,photo" });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initPersistence();
+            loadTickets();
+            setupEventListeners();
+        });
+
+        // Persistence handling
+        async function initPersistence() {
+            const statusEl = document.getElementById('persistStatus');
+            const btn = document.getElementById('persistBtn');
+
+            if (!('storage' in navigator) || !navigator.storage || !navigator.storage.persist) {
+                statusEl.textContent = 'Persistent storage not supported on this browser.';
+                statusEl.className = 'status error';
+                statusEl.style.display = 'block';
+                btn.disabled = true;
+                return;
+            }
+
+            try {
+                // Check current state
+                const already = await navigator.storage.persisted();
+                if (already) {
+                    statusEl.textContent = 'Storage is already persistent.';
+                    statusEl.className = 'status success';
+                    statusEl.style.display = 'block';
+                    btn.disabled = true;
+                    return;
+                }
+
+                // Try automatically (may be refused without gesture)
+                const grantedAuto = await navigator.storage.persist();
+                if (grantedAuto) {
+                    statusEl.textContent = 'Persistent storage enabled.';
+                    statusEl.className = 'status success';
+                    statusEl.style.display = 'block';
+                    btn.disabled = true;
+                } else {
+                    statusEl.textContent = 'Persistent storage not yet enabled. Click the button to request it.';
+                    statusEl.className = 'status error';
+                    statusEl.style.display = 'block';
+                    btn.disabled = false;
+                }
+            } catch (e) {
+                statusEl.textContent = 'Error while checking/enabling persistence.';
+                statusEl.className = 'status error';
+                statusEl.style.display = 'block';
+                btn.disabled = false;
+            }
+        }
+
+        async function requestPersistence() {
+            const statusEl = document.getElementById('persistStatus');
+            try {
+                const granted = await navigator.storage.persist();
+                if (granted) {
+                    statusEl.textContent = 'Persistent storage enabled.';
+                    statusEl.className = 'status success';
+                    document.getElementById('persistBtn').disabled = true;
+                } else {
+                    statusEl.textContent = 'Persistent storage denied. Try installing the app or use the app regularly, then try again.';
+                    statusEl.className = 'status error';
+                }
+                statusEl.style.display = 'block';
+            } catch (e) {
+                statusEl.textContent = 'Error while requesting persistence.';
+                statusEl.className = 'status error';
+                statusEl.style.display = 'block';
+            }
+        }
+
+        // UI Event configuration
+        function setupEventListeners() {
+            document.getElementById('persistBtn').addEventListener('click', requestPersistence);
+            document.getElementById('ticketForm').addEventListener('submit', addTicket);
+            document.querySelector('input[name="photo"]').addEventListener('change', handlePhoto);
+            document.getElementById('excelFile').addEventListener('change', loadWorkbook);
+            document.getElementById('selectAll').addEventListener('change', handleSelectAll);
+            document.getElementById('deleteSelected').addEventListener('click', deleteSelectedTickets);
+            document.getElementById('exportExcel').addEventListener('click', exportToExcel);
+            document.getElementById('exportPDF').addEventListener('click', exportPDF);
+        }
+
+        // Photos handling
+        function handlePhoto(e) {
+            const file = e.target.files[0];
+            const preview = document.getElementById('photoPreview');
+            
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                preview.style.display = 'none';
+            }
+        }
+
+        // Load workbook
+        function loadWorkbook(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    workbook = XLSX.read(data, { type: 'array' });
+                    sheetName = workbook.SheetNames.find(n => n.toLowerCase().includes("business")) || workbook.SheetNames[1];
+                    
+                    showStatus(`Workbook loaded: ${sheetName}`, 'success');
+                    document.getElementById('exportExcel').disabled = false;
+                } catch (error) {
+                    showStatus('Error while loading the Excel file', 'error');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Add ticket
+        async function addTicket(e) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            
+            // Photo
+            let photoData = null;
+            const photoFile = formData.get('photo');
+            if (photoFile && photoFile.size > 0) {
+                photoData = await new Promise(resolve => {
+                    const reader = new FileReader();
+                    reader.onload = e => resolve(e.target.result);
+                    reader.readAsDataURL(photoFile);
+                });
+            }
+            
+            const newTicket = {
+                date: formData.get('date'),
+                type: formData.get('type'),
+                desc: formData.get('desc'),
+                guests: formData.get('guests'),
+                km: formData.get('km'),
+                amount: formData.get('amount'),
+                photo: photoData
+            };
+            
+            try {
+                await db.tickets.add(newTicket);
+                form.reset();
+                document.getElementById('photoPreview').style.display = 'none';
+                loadTickets();
+                showStatus('Receipt added successfully', 'success');
+            } catch (error) {
+                showStatus('Error while adding the receipt', 'error');
+            }
+        }
+
+        // Load tickets
+        async function loadTickets() {
+            try {
+                tickets = await db.tickets.toArray();
+                renderTickets();
+                updateTicketCount();
+                updateExportButtons();
+            } catch (error) {
+                showStatus('Error while loading receipts', 'error');
+            }
+        }
+
+        // Render tickets
+        function renderTickets() {
+            const list = document.getElementById('ticketList');
+            const sortedTickets = sortTicketsByDate(tickets);
+            
+            list.innerHTML = sortedTickets.map((ticket, index) => `
+                <li class="ticket-item">
+                    <input type="checkbox" 
+                           ${selectedTickets.includes(ticket.id) ? 'checked' : ''} 
+                           onchange="handleSelect(${ticket.id}, this.checked)">
+                    <div class="ticket-number">#${10 + index}</div>
+                    <div class="ticket-content">
+                        <div><strong>Date:</strong> ${ticket.date || "-"}</div>
+                        <div><strong>Type:</strong> ${ticket.type || "-"}</div>
+                        <div><strong>Description:</strong> ${ticket.desc || "-"}</div>
+                        <div><strong>Guests:</strong> ${ticket.guests || "-"}</div>
+                        <div><strong>Kilometers:</strong> ${ticket.km || "-"}</div>
+                        <div><strong>Amount:</strong> ${ticket.amount || "-"}</div>
+                    </div>
+                    ${ticket.photo ? `<img src="${ticket.photo}" alt="Ticket" class="ticket-photo">` : ''}
+                    <button class="delete-btn" onclick="deleteTicket(${ticket.id})">Delete</button>
+                </li>
+            `).join('');
+        }
+
+        // Sort by date
+        function sortTicketsByDate(tickets) {
+            return [...tickets].sort((a, b) => {
+                if (!a.date && !b.date) return 0;
+                if (!a.date) return 1;
+                if (!b.date) return -1;
+                return new Date(a.date) - new Date(b.date);
+            });
+        }
+
+        // Selection handling
+        function handleSelect(id, checked) {
+            if (checked) {
+                selectedTickets.push(id);
+            } else {
+                selectedTickets = selectedTickets.filter(tid => tid !== id);
+            }
+            updateDeleteButton();
+        }
+
+        function handleSelectAll() {
+            selectAll = !selectAll;
+            if (selectAll) {
+                selectedTickets = tickets.map(t => t.id);
+            } else {
+                selectedTickets = [];
+            }
+            renderTickets();
+            updateDeleteButton();
+        }
+
+        function updateDeleteButton() {
+            const deleteBtn = document.getElementById('deleteSelected');
+            deleteBtn.disabled = selectedTickets.length === 0;
+        }
+
+        // Bulk delete
+        async function deleteSelectedTickets() {
+            if (selectedTickets.length === 0) return;
+            
+            if (!confirm(`Are you sure you want to delete ${selectedTickets.length} receipt(s)?`)) return;
+            
+            try {
+                await db.tickets.bulkDelete(selectedTickets);
+                selectedTickets = [];
+                selectAll = false;
+                loadTickets();
+                showStatus('Receipts deleted successfully', 'success');
+            } catch (error) {
+                showStatus('Error while deleting', 'error');
+            }
+        }
+
+        // Delete one
+        async function deleteTicket(id) {
+            if (!confirm('Are you sure you want to delete this receipt?')) return;
+            
+            try {
+                await db.tickets.delete(id);
+                selectedTickets = selectedTickets.filter(tid => tid !== id);
+                loadTickets();
+                showStatus('Receipt deleted successfully', 'success');
+            } catch (error) {
+                showStatus('Error while deleting', 'error');
+            }
+        }
+
+        // Excel export
+        function exportToExcel() {
+            if (!workbook) {
+                showStatus('Please load the HR file first', 'error');
+                return;
+            }
+            
+            try {
+                const ws = workbook.Sheets[sheetName];
+                let row = 10;
+                const sortedTickets = sortTicketsByDate(tickets);
+                
+                sortedTickets.forEach(ticket => {
+                    let dateExcel = ticket.date;
+                    if (dateExcel) {
+                        const d = new Date(dateExcel);
+                        const mm = String(d.getMonth() + 1).padStart(2, '0');
+                        const dd = String(d.getDate()).padStart(2, '0');
+                        const yyyy = d.getFullYear();
+                        dateExcel = mm + dd + yyyy;
+                    } else {
+                        dateExcel = '';
+                    }
+                    
+                    ws[`B${row}`] = { v: dateExcel };
+                    ws[`C${row}`] = { v: ticket.type };
+                    ws[`G${row}`] = { v: ticket.desc };
+                    ws[`J${row}`] = { v: ticket.guests };
+                    ws[`K${row}`] = { v: ticket.km };
+                    ws[`N${row}`] = { v: ticket.amount };
+                    row++;
+                });
+                
+                const wbout = XLSX.write(workbook, { type: "array", bookType: "xlsx" });
+                const blob = new Blob([wbout], { type: "application/octet-stream" });
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(blob);
+                a.download = `BER_export_${new Date().toLocaleDateString()}.xlsx`;
+                a.click();
+                
+                showStatus('Excel export successful', 'success');
+            } catch (error) {
+                showStatus('Error during Excel export', 'error');
+            }
+        }
+
+        // PDF export
+        async function exportPDF() {
+            const ticketsWithPhoto = tickets.filter(t => t.photo);
+            if (ticketsWithPhoto.length === 0) {
+                showStatus('No receipt with photo to export', 'error');
+                return;
+            }
+            
+            try {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF();
+                let y = 10;
+                const sortedTickets = sortTicketsByDate(ticketsWithPhoto);
+                
+                for (let i = 0; i < sortedTickets.length; i++) {
+                    const ticket = sortedTickets[i];
+                    pdf.text(`Row ${10 + tickets.indexOf(ticket)}`, 10, y);
+                    y += 8;
+                    
+                    if (ticket.photo) {
+                        const imgProps = pdf.getImageProperties(ticket.photo);
+                        let imgWidth = 60;
+                        let imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+                        
+                        if (y + imgHeight > 270) {
+                            pdf.addPage();
+                            y = 10;
+                        }
+                        
+                        pdf.addImage(ticket.photo, "JPEG", 10, y, imgWidth, imgHeight);
+                        y += imgHeight + 8;
+                    }
+                    
+                    const details = [
+                        `Date: ${ticket.date || "-"}`,
+                        `Type: ${ticket.type || "-"}`,
+                        `Description: ${ticket.desc || "-"}`,
+                        `Guests: ${ticket.guests || "-"}`,
+                        `Kilometers: ${ticket.km || "-"}`,
+                        `Amount: ${ticket.amount || "-"}`
+                    ];
+                    
+                    details.forEach(detail => {
+                        if (y > 270) {
+                            pdf.addPage();
+                            y = 10;
+                        }
+                        pdf.text(detail, 10, y);
+                        y += 7;
+                    });
+                    
+                    if (y > 270) {
+                        pdf.addPage();
+                        y = 10;
+                    }
+                }
+                
+                pdf.save("Receipts.pdf");
+                showStatus('PDF export successful', 'success');
+            } catch (error) {
+                showStatus('Error during PDF export', 'error');
+            }
+        }
+
+        // Ticket counter
+        function updateTicketCount() {
+            document.getElementById('ticketCount').textContent = tickets.length;
+        }
+
+        // Export buttons state
+        function updateExportButtons() {
+            const hasPhotos = tickets.some(t => t.photo);
+            document.getElementById('exportPDF').disabled = !hasPhotos;
+        }
+
+        // Status helper
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('excelStatus');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
+
+
