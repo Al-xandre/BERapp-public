@@ -682,15 +682,21 @@
 
         // Export PDF
         async function exportPDF() {
-            // Exclude Indemnity KMs from PDF, but keep them elsewhere
-            // Keep original order and numbering 1..N; skip only rendering of Indemnity KMs
-            const eligible = tickets.filter(t => t.photo);
-            if (eligible.length === 0) {
+            // Build entries from the full sorted list to preserve global numbering
+            const sortedAll = sortTicketsByDate(tickets);
+            const entriesForPdf = [];
+            for (let idx = 0; idx < sortedAll.length; idx++) {
+                const t = sortedAll[idx];
+                if (t.photo && t.type !== "Indemnity KMs") {
+                    entriesForPdf.push({ ticket: t, number: idx + 1 });
+                }
+            }
+            if (entriesForPdf.length === 0) {
                 showStatus('No receipt with photo to export', 'error');
                 return;
             }
 
-            if (eligible.length > 90) {
+            if (entriesForPdf.length > 90) {
                 alert('The original BER file cannot exceed 90 entries. Please save your BER in Excel and PDF format and continue with a new BER file.');
                 return;
             }
@@ -699,22 +705,13 @@
                 const { jsPDF } = window.jspdf;
                 const pdf = new jsPDF();
                 let y = 10;
-                const sortedTickets = sortTicketsByDate(eligible);
                 
-                for (let i = 0; i < sortedTickets.length; i++) {
-                    const ticket = sortedTickets[i];
-                    // Skip rendering in PDF if Indemnity KMs, but keep numbering gap
-                    if (ticket.type === "Indemnity KMs") {
-                        // Reserve space only for the number line to preserve numbering gaps
-                        pdf.text(String(i + 1), 10, y);
-                        y += 8;
-                        if (y > 270) { pdf.addPage(); y = 10; }
-                        continue;
-                    }
+                for (let i = 0; i < entriesForPdf.length; i++) {
+                    const { ticket, number } = entriesForPdf[i];
                     // Number + photo left, details right
                     const leftX = 10;
                     const numberY = y;
-                    pdf.text(String(i + 1), leftX, numberY);
+                    pdf.text(String(number), leftX, numberY);
                     const imgX = leftX;
                     const imgWidth = 60;
                     let imgHeight = 0;
@@ -788,4 +785,4 @@
         }
     </script>
 </body>
-</html>
+</html> 
