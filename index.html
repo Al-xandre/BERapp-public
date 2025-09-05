@@ -458,7 +458,20 @@
 
         // Initialisation de IndexedDB avec Dexie
         const db = new Dexie("expenses");
-        db.version(1).stores({ tickets: "++id,date,type,desc,guests,km,amount,currency,photos" });
+        db.version(1).stores({ tickets: "++id,date,type,desc,guests,km,amount,photo" });
+        db.version(2).stores({ tickets: "++id,date,type,desc,guests,km,amount,currency,photos" }).upgrade(tx => {
+            return tx.tickets.toCollection().modify(ticket => {
+                // Migrate old photo field to photos array
+                if (ticket.photo && !ticket.photos) {
+                    ticket.photos = [ticket.photo];
+                    delete ticket.photo;
+                }
+                // Add default currency if missing
+                if (!ticket.currency) {
+                    ticket.currency = 'EUR';
+                }
+            });
+        });
 
         // Initialisation
         document.addEventListener('DOMContentLoaded', function() {
@@ -646,7 +659,7 @@
                         <div><strong>Kilometers:</strong> ${ticket.km || "-"}</div>
                         <div><strong>Amount:</strong> ${ticket.amount || "-"} ${ticket.currency || "EUR"}</div>
                     </div>
-                    ${(ticket.photos && ticket.photos.length) ? ticket.photos.map(src => `<img src="${src}" alt="Ticket" class="ticket-photo">`).join('') : ''}
+                    ${(ticket.photos && Array.isArray(ticket.photos) && ticket.photos.length > 0) ? ticket.photos.map(src => `<img src="${src}" alt="Ticket" class="ticket-photo">`).join('') : ''}
                     <button class="delete-btn" onclick="deleteTicket(${ticket.id})">Delete</button>
                 </li>
             `).join('');
@@ -801,7 +814,7 @@
             const entriesForPdf = [];
             for (let idx = 0; idx < sortedAll.length; idx++) {
                 const t = sortedAll[idx];
-                if (t.photo && t.type !== "Indemnity KMs") {
+                if (t.photos && Array.isArray(t.photos) && t.photos.length > 0 && t.type !== "Indemnity KMs") {
                     entriesForPdf.push({ ticket: t, number: startLine + idx });
                 }
             }
@@ -904,7 +917,7 @@
 
         // Mise à jour des boutons d'export
         function updateExportButtons() {
-            const hasPhotos = tickets.some(t => t.photo);
+            const hasPhotos = tickets.some(t => t.photos && Array.isArray(t.photos) && t.photos.length > 0);
             document.getElementById('exportPDF').disabled = !hasPhotos;
         }
 
